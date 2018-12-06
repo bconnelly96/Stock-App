@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Stock Application</string>
+
+    <string name="add_string">There are currently no stocks in your
+    portfolio. Click the Add Button below to get started.</string>
+    <string name="dialog">Enter the Symbol of the Stock You Wish To Add.</string>
+    <string name="hint">Stock Symbol</string>
+    <string name="add_commit">Add</string>
+    <string name="cancel">Cancel</string>
+    <string name="success_string">Stock Successfully Added to Portfolio</string>
+    <string name="failure_string">Stock Could Not Be Added to Portfolio</string>
 </resources>
