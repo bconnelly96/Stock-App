@@ -1,9 +1,8 @@
 package edu.temple.stockapplication;
 
-import android.os.AsyncTask;
+
 import android.os.FileObserver;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -20,7 +19,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URL;
 
 
 //container, details_container
@@ -29,13 +27,10 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
 
     FragmentManager fragmentManager;
     PortfolioPane portfolioPaneFragment;
-
     FileObserver fileObserver;
-
     StockUpdateThread updateThread;
-
     final int[] portfolioUpdated = new int[1];
-
+    Bundle savedDetailsBundle;
 
     /*receives message from UpdateThread after data written to file;
     * sets portfolioUpdated[] so Portfolio Fragment's listview contents update*/
@@ -44,6 +39,18 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
         public boolean handleMessage(Message msg) {
             if (msg.arg1 == 1) {
                 portfolioUpdated[0] = 1;
+            }
+            return false;
+        }
+    });
+
+    Handler toastHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            if (msg.arg1 == 1) {
+                Toast.makeText(MainActivity.this, getResources().getString(R.string.success_string), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, getResources().getString(R.string.failure_string), Toast.LENGTH_SHORT).show();
             }
             return false;
         }
@@ -64,21 +71,29 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
             updateThread = new StockUpdateThread(getFilesDir(), updateHandler);
             updateThread.start();
         } else {
-            fragmentManager.popBackStack();
+            StockDetailsPane stockDetailsPane = new StockDetailsPane();
+            stockDetailsPane.setArguments(savedInstanceState.getBundle("details_bundle"));
 
+            if (findViewById(R.id.details_container) != null) {
+                fragmentManager.popBackStack();
+                fragmentManager.beginTransaction().replace(R.id.details_container, stockDetailsPane).commit();
+            } else {
+                if (savedDetailsBundle != null) {
+                    fragmentManager.beginTransaction().replace(R.id.container, stockDetailsPane).addToBackStack(null).commit();
+                }
+            }
         }
 
-
-
+        //update the UI upon update of portfolio_file.json
         fileObserver = new FileObserver(getFilesDir().getAbsolutePath()) {
             @Override
             public void onEvent(int event, @Nullable String path) {
                 if (portfolioUpdated[0] == 1) {
                     final PortfolioPaneAdapter portfolioPaneAdapter = (PortfolioPaneAdapter) portfolioPaneFragment.portfolioPaneAdapter;
-                    portfolioPaneAdapter.updateDataset(new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME));
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            portfolioPaneAdapter.updateDataset(new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME));
                             portfolioPaneAdapter.notifyDataSetChanged();
                         }
                     });
@@ -113,14 +128,14 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
                     @Override
                     public void onClick(View v) {
                         String stockSymbol = addInput.getText().toString();
-                        StockRetThread stockRetThread = new StockRetThread(getFilesDir(), stockSymbol, FILENAME);
+                        StockRetThread stockRetThread = new StockRetThread(getFilesDir(), stockSymbol, FILENAME, toastHandler);
                         stockRetThread.start();
 
                         final PortfolioPaneAdapter portfolioPaneAdapter = (PortfolioPaneAdapter) portfolioPaneFragment.portfolioPaneAdapter;
-                        portfolioPaneAdapter.updateDataset(new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME));
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                portfolioPaneAdapter.updateDataset(new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME));
                                 portfolioPaneAdapter.notifyDataSetChanged();
                             }
                         });
@@ -129,6 +144,19 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
                 });
             }
         });
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putBundle("details_bundle", savedDetailsBundle);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        savedDetailsBundle = savedInstanceState.getBundle("details_bundle");
     }
 
     /*triggered by click on PortfolioPane fragment's ListView.
@@ -152,5 +180,6 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
         } else {
             fragmentManager.beginTransaction().replace(R.id.container, stockDetailsPane).addToBackStack(null).commit();
         }
+        savedDetailsBundle = args;
     }
 }

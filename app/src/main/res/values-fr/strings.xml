@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="app_name">Application de stock</string>
+<string name="add_string">Il n\'y a actuellement aucun stock dans votre
+     portefeuille. Cliquez sur le bouton Ajouter ci-dessous pour commencer.</string>
+<string name="dialog">Entrez le symbole du stock que vous souhaitez ajouter.</string>
+<string name="hint">Stock Symbole</string>
+<string name="add_commit">Ajouter</string>
+<string name="cancel">Annuler</string>
+<string name="success_string">Stock ajouté au portefeuille avec succès</string>
+<string name="failure_string">Le stock n'a pas pu être ajouté au portefeuille</string>
+</resources>
