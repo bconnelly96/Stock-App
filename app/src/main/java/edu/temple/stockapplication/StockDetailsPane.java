@@ -33,8 +33,8 @@ public class StockDetailsPane extends Fragment {
         if (args != null) {
             String stockSymbol = args.getString("STOCK_SYMBOL");
             companyName.setText(args.getString("COMPANY_NAME"));
-            currentPrice.setText(args.getString("CURRENT_PRICE"));
-            openingPrice.setText(args.getString("OPENING_PRICE"));
+            currentPrice.setText("Current Price: $" + args.getString("CURRENT_PRICE"));
+            openingPrice.setText("Opening Price: $" + args.getString("OPENING_PRICE"));
 
             stockChart.getSettings().setJavaScriptEnabled(true);
             stockChart.loadUrl("https://macc.io/lab/cis3515/?symbol=" + stockSymbol);

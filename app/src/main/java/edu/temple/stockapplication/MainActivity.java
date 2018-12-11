@@ -1,8 +1,13 @@
 package edu.temple.stockapplication;
 
+import android.os.AsyncTask;
+import android.os.FileObserver;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,20 +20,74 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLConnection;
 
+
+//container, details_container
 public class MainActivity extends AppCompatActivity implements PortfolioPane.StockSelected {
     final String FILENAME = "portfolio_file.json";
+
+    FragmentManager fragmentManager;
+    PortfolioPane portfolioPaneFragment;
+
+    FileObserver fileObserver;
+
+    StockUpdateThread updateThread;
+
+    final int[] portfolioUpdated = new int[1];
+
+
+    /*receives message from UpdateThread after data written to file;
+    * sets portfolioUpdated[] so Portfolio Fragment's listview contents update*/
+    Handler updateHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            if (msg.arg1 == 1) {
+                portfolioUpdated[0] = 1;
+            }
+            return false;
+        }
+    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        fragmentManager = getSupportFragmentManager();
+        portfolioPaneFragment = new PortfolioPane();
+        fragmentManager.beginTransaction().add(R.id.container, portfolioPaneFragment).commit();
+
+        //retain worker thread's instance state
+        if (savedInstanceState == null) {
+            portfolioUpdated[0] = 0;
+            updateThread = new StockUpdateThread(getFilesDir(), updateHandler);
+            updateThread.start();
+        } else {
+            fragmentManager.popBackStack();
+
+        }
+
+
+
+        fileObserver = new FileObserver(getFilesDir().getAbsolutePath()) {
+            @Override
+            public void onEvent(int event, @Nullable String path) {
+                if (portfolioUpdated[0] == 1) {
+                    final PortfolioPaneAdapter portfolioPaneAdapter = (PortfolioPaneAdapter) portfolioPaneFragment.portfolioPaneAdapter;
+                    portfolioPaneAdapter.updateDataset(new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            portfolioPaneAdapter.notifyDataSetChanged();
+                        }
+                    });
+                    System.out.println("UPDATED IN ON EVENT " + event);
+                }
+                portfolioUpdated[0] = 0;
+            }
+        };
+        fileObserver.startWatching();
 
         //windowed dialog triggered by FAB click
         FloatingActionButton floatingActionButton = findViewById(R.id.floatingActionButton2);
@@ -53,7 +112,18 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
                 addButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        addStock(addInput.getText().toString());
+                        String stockSymbol = addInput.getText().toString();
+                        StockRetThread stockRetThread = new StockRetThread(getFilesDir(), stockSymbol, FILENAME);
+                        stockRetThread.start();
+
+                        final PortfolioPaneAdapter portfolioPaneAdapter = (PortfolioPaneAdapter) portfolioPaneFragment.portfolioPaneAdapter;
+                        portfolioPaneAdapter.updateDataset(new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME));
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                portfolioPaneAdapter.notifyDataSetChanged();
+                            }
+                        });
                         dialog.dismiss();
                     }
                 });
@@ -61,22 +131,13 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
         });
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
-
-
     /*triggered by click on PortfolioPane fragment's ListView.
      * sets the arguments for a DetailsPane fragment and adds it to container*/
     @Override
     public void stockSelected(int position) throws JSONException {
-        JSONObject jsonObject = new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME).getJSONObject(position);
+        JSONObject jsonObject = new JSONReaderWriter()
+                .getPortfolioFromFile(getFilesDir(), FILENAME)
+                .getJSONObject(position);
 
         StockDetailsPane stockDetailsPane = new StockDetailsPane();
         Bundle args = new Bundle();
@@ -85,58 +146,11 @@ public class MainActivity extends AppCompatActivity implements PortfolioPane.Sto
         args.putString("CURRENT_PRICE", Integer.toString(jsonObject.getInt("LastPrice")));
         args.putString("OPENING_PRICE", Integer.toString(jsonObject.getInt("Open")));
         stockDetailsPane.setArguments(args);
-    }
 
-    Handler StockAddedHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            if (msg.arg1 == 1) {
-                Toast.makeText(MainActivity.this, getResources().getString(R.string.success_string), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(MainActivity.this, getResources().getString(R.string.failure_string), Toast.LENGTH_SHORT).show();
-            }
-            return false;
+        if (findViewById(R.id.details_container) != null) {
+            fragmentManager.beginTransaction().replace(R.id.details_container, stockDetailsPane).commit();
+        } else {
+            fragmentManager.beginTransaction().replace(R.id.container, stockDetailsPane).addToBackStack(null).commit();
         }
-    });
-
-    /*add new stock data to portfolio file.
-    * return true if stock data can be added i.e. stock symbol provided is valid*/
-    private void addStock(final String stockSymbol) {
-        Thread thread = new Thread() {
-            @Override
-            public void run() {
-                URL url;
-                Message message = Message.obtain();
-                message.arg1 = 0;
-                try {
-                    url = new URL("http://dev.markitondemand.com/MODApis/Api/v2/Quote/json/?symbol=" + stockSymbol.toUpperCase());
-                    URLConnection urlConnection = url.openConnection();
-                    InputStream inputStream = urlConnection.getInputStream();
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                    String line;
-                    StringBuilder stringBuilder = new StringBuilder();
-                    while((line = bufferedReader.readLine()) != null) {
-                        stringBuilder.append(line);
-                        stringBuilder.append('\n');
-                    }
-                    inputStream.close();
-                    bufferedReader.close();
-                    JSONArray jsonArray = new JSONReaderWriter().getPortfolioFromFile(getFilesDir(), FILENAME);
-                    jsonArray.put(new JSONObject(stringBuilder.toString()));
-                    JSONReaderWriter jsonReaderWriter = new JSONReaderWriter();
-                    jsonReaderWriter.writePortfolioToFile(getFilesDir(), FILENAME, jsonArray);
-
-                    message.arg1 = 1;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                StockAddedHandler.sendMessage(message);
-            }
-
-        };
-        thread.start();
-
     }
 }

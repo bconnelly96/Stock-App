@@ -6,39 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <fragment
-        android:id="@+id/fragment3"
-        android:name="edu.temple.stockapplication.PortfolioPane"
-        android:layout_width="295dp"
-        android:layout_height="336dp"
-        android:layout_marginBottom="9dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginTop="14dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.006"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
-
-    <fragment
-        android:id="@+id/fragment4"
-        android:name="edu.temple.stockapplication.StockDetailsPane"
-        android:layout_width="291dp"
-        android:layout_height="337dp"
-        android:layout_marginEnd="4dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="4dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="13dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
-
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/floatingActionButton2"
         android:layout_width="wrap_content"
@@ -57,5 +24,41 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.887"
         app:srcCompat="@android:drawable/ic_input_add" />
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="216dp"
+        android:layout_height="218dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="360dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="360dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="7dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/details_container"
+        android:layout_width="352dp"
+        android:layout_height="257dp"
+        android:layout_marginBottom="7dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.493">
+
+    </FrameLayout>
 
 </android.support.constraint.ConstraintLayout>

@@ -27,7 +27,7 @@ public class PortfolioPaneAdapter extends BaseAdapter {
 
     @Override
     public JSONObject getItem(int position) {
-        JSONObject jsonObject = null;
+        JSONObject jsonObject = new JSONObject();
         try {
             jsonObject = jsonArray.getJSONObject(position);
         } catch (JSONException e) {
